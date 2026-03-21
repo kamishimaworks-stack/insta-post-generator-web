@@ -4,6 +4,9 @@ export type Profile = {
   readonly account_name: string;
   readonly target_audience: string;
   readonly purpose: string;
+  readonly genre: string;
+  readonly follower_scale: string;
+  readonly competitors: string;
   readonly tone: string;
   readonly fixed_hashtags: string;
   readonly custom_instructions: string;
@@ -15,6 +18,9 @@ export type ProfileInput = {
   readonly account_name: string;
   readonly target_audience: string;
   readonly purpose: string;
+  readonly genre: string;
+  readonly follower_scale: string;
+  readonly competitors: string;
   readonly tone: string;
   readonly fixed_hashtags: string;
   readonly custom_instructions: string;

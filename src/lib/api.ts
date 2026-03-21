@@ -46,7 +46,10 @@ export async function analyzeStyle(
   pastHashtags: string,
   accountName?: string,
   targetAudience?: string,
-  purpose?: string
+  purpose?: string,
+  genre?: string,
+  followerScale?: string,
+  competitors?: string
 ): Promise<StyleAnalysisResponse> {
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -62,6 +65,9 @@ export async function analyzeStyle(
     account_name: accountName?.trim() || "",
     target_audience: targetAudience?.trim() || "",
     purpose: purpose?.trim() || "",
+    genre: genre?.trim() || "",
+    follower_scale: followerScale?.trim() || "",
+    competitors: competitors?.trim() || "",
   };
 
   // 2つのEdge Functionを並列で呼び出し（タイムアウト回避）

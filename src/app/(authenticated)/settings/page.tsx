@@ -13,6 +13,9 @@ export default function SettingsPage() {
     account_name: "",
     target_audience: "",
     purpose: "",
+    genre: "",
+    follower_scale: "",
+    competitors: "",
     tone: "",
     fixed_hashtags: "",
     custom_instructions: "",
@@ -51,6 +54,9 @@ export default function SettingsPage() {
         account_name: data.account_name,
         target_audience: data.target_audience,
         purpose: data.purpose,
+        genre: data.genre ?? "",
+        follower_scale: data.follower_scale ?? "",
+        competitors: data.competitors ?? "",
         tone: data.tone,
         fixed_hashtags: data.fixed_hashtags,
         custom_instructions: data.custom_instructions,
@@ -71,6 +77,9 @@ export default function SettingsPage() {
         account_name: profile.account_name,
         target_audience: profile.target_audience,
         purpose: profile.purpose,
+        genre: profile.genre,
+        follower_scale: profile.follower_scale,
+        competitors: profile.competitors,
         custom_instructions: profile.custom_instructions,
         updated_at: new Date().toISOString(),
       })
@@ -160,6 +169,24 @@ export default function SettingsPage() {
               value={profile.purpose}
               onChange={(v) => setProfile((p) => ({ ...p, purpose: v }))}
               placeholder="例: 採用・フォロワー増加"
+            />
+            <BasicField
+              label="ジャンル"
+              value={profile.genre}
+              onChange={(v) => setProfile((p) => ({ ...p, genre: v }))}
+              placeholder="例: 製造業・工場紹介"
+            />
+            <BasicField
+              label="フォロワー規模"
+              value={profile.follower_scale}
+              onChange={(v) => setProfile((p) => ({ ...p, follower_scale: v }))}
+              placeholder="例: 1,000〜5,000人"
+            />
+            <BasicField
+              label="競合・参考アカウント"
+              value={profile.competitors}
+              onChange={(v) => setProfile((p) => ({ ...p, competitors: v }))}
+              placeholder="例: @kawasakimotors_jp"
             />
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-gray-600">

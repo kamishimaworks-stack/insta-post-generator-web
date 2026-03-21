@@ -4,21 +4,25 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { analyzeStyle } from "@/lib/api";
-import { validatePastPosts } from "@/lib/validation";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 type SetupData = {
   account_name: string;
   target_audience: string;
   purpose: string;
+  genre: string;
+  follower_scale: string;
+  custom_instructions: string;
   past_posts: string[];
   past_hashtags: string;
-  custom_instructions: string;
+  competitors: string;
   skipped_posts: boolean;
   skipped_hashtags: boolean;
+  skipped_competitors: boolean;
 };
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 9;
+const SKIPPABLE_STEPS = [7, 8, 9];
 
 export default function SetupPage() {
   const router = useRouter();
@@ -29,11 +33,15 @@ export default function SetupPage() {
     account_name: "",
     target_audience: "",
     purpose: "",
+    genre: "",
+    follower_scale: "",
+    custom_instructions: "",
     past_posts: ["", "", "", "", ""],
     past_hashtags: "",
-    custom_instructions: "",
+    competitors: "",
     skipped_posts: false,
     skipped_hashtags: false,
+    skipped_competitors: false,
   });
 
   const updateField = useCallback(
@@ -73,22 +81,26 @@ export default function SetupPage() {
       case 3:
         return data.purpose.trim().length > 0;
       case 4:
-        return true; // スキップ可能
+        return data.genre.trim().length > 0;
       case 5:
-        return true; // スキップ可能
+        return data.follower_scale.trim().length > 0;
       case 6:
-        return true;
+        return true; // 空欄OK
+      case 7:
+        return true; // スキップ可
+      case 8:
+        return true; // スキップ可
+      case 9:
+        return true; // スキップ可
       default:
         return false;
     }
   };
 
   const handleSkip = useCallback(() => {
-    if (step === 4) {
-      setData((prev) => ({ ...prev, skipped_posts: true }));
-    } else if (step === 5) {
-      setData((prev) => ({ ...prev, skipped_hashtags: true }));
-    }
+    if (step === 7) setData((prev) => ({ ...prev, skipped_posts: true }));
+    else if (step === 8) setData((prev) => ({ ...prev, skipped_hashtags: true }));
+    else if (step === 9) setData((prev) => ({ ...prev, skipped_competitors: true }));
     setStep((s) => s + 1);
     setError("");
   }, [step]);
@@ -97,40 +109,48 @@ export default function SetupPage() {
     setError("");
 
     if (step < TOTAL_STEPS) {
-      if (step === 4) {
+      // 投稿文: 空ならスキップ扱い
+      if (step === 7) {
         const nonEmpty = data.past_posts.filter((p) => p.trim().length > 0);
-        if (nonEmpty.length === 0) {
-          setData((prev) => ({ ...prev, skipped_posts: true }));
-        } else {
-          setData((prev) => ({ ...prev, skipped_posts: false }));
-        }
+        setData((prev) => ({ ...prev, skipped_posts: nonEmpty.length === 0 }));
       }
-      if (step === 5) {
-        if (data.past_hashtags.trim().length === 0) {
-          setData((prev) => ({ ...prev, skipped_hashtags: true }));
-        } else {
-          setData((prev) => ({ ...prev, skipped_hashtags: false }));
-        }
+      // ハッシュタグ: 空ならスキップ扱い
+      if (step === 8) {
+        setData((prev) => ({
+          ...prev,
+          skipped_hashtags: data.past_hashtags.trim().length === 0,
+        }));
+      }
+      // 競合: 空ならスキップ扱い
+      if (step === 9) {
+        setData((prev) => ({
+          ...prev,
+          skipped_competitors: data.competitors.trim().length === 0,
+        }));
       }
       setStep((s) => s + 1);
       return;
     }
 
-    // Final step — analyze and save
+    // 最終ステップ — 分析して保存
     setLoading(true);
 
     try {
-      const hasPosts = !data.skipped_posts &&
-        data.past_posts.filter((p) => p.trim().length > 0).length >= 5;
-      const hasHashtags = !data.skipped_hashtags &&
-        data.past_hashtags.trim().length > 0;
+      const hasPosts =
+        !data.skipped_posts &&
+        data.past_posts.filter((p) => p.trim().length > 0).length >= 1;
+      const hasHashtags =
+        !data.skipped_hashtags && data.past_hashtags.trim().length > 0;
 
       const analysisResult = await analyzeStyle(
         hasPosts ? data.past_posts : [],
         hasHashtags ? data.past_hashtags : "",
         data.account_name.trim(),
         data.target_audience.trim(),
-        data.purpose.trim()
+        data.purpose.trim(),
+        data.genre.trim(),
+        data.follower_scale.trim(),
+        data.skipped_competitors ? "" : data.competitors.trim()
       );
 
       if (!analysisResult.success) {
@@ -155,6 +175,11 @@ export default function SetupPage() {
           account_name: data.account_name.trim(),
           target_audience: data.target_audience.trim(),
           purpose: data.purpose.trim(),
+          genre: data.genre.trim(),
+          follower_scale: data.follower_scale.trim(),
+          competitors: data.skipped_competitors
+            ? ""
+            : data.competitors.trim(),
           tone: analysisResult.data!.tone_analysis,
           fixed_hashtags: analysisResult.data!.hashtag_strategy,
           custom_instructions: data.custom_instructions.trim(),
@@ -176,6 +201,15 @@ export default function SetupPage() {
     }
   }, [step, data, router]);
 
+  const followerOptions = [
+    "〜1,000人",
+    "1,000〜5,000人",
+    "5,000〜1万人",
+    "1万〜5万人",
+    "5万〜10万人",
+    "10万人以上",
+  ];
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       {loading && <LoadingOverlay status="analyzing" />}
@@ -186,7 +220,7 @@ export default function SetupPage() {
           <p className="mt-1 text-sm text-gray-500">
             ステップ {step} / {TOTAL_STEPS}
           </p>
-          <div className="mx-auto mt-3 flex max-w-xs gap-1.5">
+          <div className="mx-auto mt-3 flex max-w-xs gap-1">
             {Array.from({ length: TOTAL_STEPS }, (_, i) => (
               <div
                 key={i}
@@ -199,6 +233,7 @@ export default function SetupPage() {
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-sm">
+          {/* === 必須ステップ（1-5） === */}
           {step === 1 && (
             <StepContent
               title="アカウント名を教えてください"
@@ -249,8 +284,67 @@ export default function SetupPage() {
 
           {step === 4 && (
             <StepContent
+              title="投稿のジャンルは？"
+              description="アカウントのメインジャンルを教えてください。Instagramのアルゴリズムはジャンルごとにコンテンツを分類して推薦します。"
+            >
+              <input
+                type="text"
+                placeholder="例: 製造業・工場紹介、美容、グルメ、旅行、教育"
+                value={data.genre}
+                onChange={(e) => updateField("genre", e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+                autoFocus
+              />
+            </StepContent>
+          )}
+
+          {step === 5 && (
+            <StepContent
+              title="現在のフォロワー数は？"
+              description="フォロワー規模によって最適な戦略が変わります。"
+            >
+              <div className="flex flex-col gap-2">
+                {followerOptions.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => updateField("follower_scale", option)}
+                    className={`rounded-xl border px-4 py-3 text-left text-base transition-colors ${
+                      data.follower_scale === option
+                        ? "border-[#6C63FF] bg-[#6C63FF]/5 text-[#6C63FF] font-semibold"
+                        : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#6C63FF]/50"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </StepContent>
+          )}
+
+          {/* === 任意ステップ（6: 空欄OK） === */}
+          {step === 6 && (
+            <StepContent
+              title="その他のリクエスト"
+              description="投稿文の生成にあたって、特別なリクエストがあれば入力してください。空欄でもOKです。"
+            >
+              <textarea
+                placeholder={"例:\n・リールが回るような文章にしてほしい\n・絵文字を多めに使ってほしい\n・CTAを必ず入れてほしい\n・フランクな口調にしてほしい"}
+                value={data.custom_instructions}
+                onChange={(e) =>
+                  updateField("custom_instructions", e.target.value)
+                }
+                rows={5}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#6C63FF]"
+                autoFocus
+              />
+            </StepContent>
+          )}
+
+          {/* === スキップ可能ステップ（7-9） === */}
+          {step === 7 && (
+            <StepContent
               title="投稿文をコピペしてください"
-              description="自分の過去の投稿文や、「こんな感じにしたい」と思う他のアカウントの投稿文でもOKです。AIが文体・トーンを分析して学習します。まだ参考にしたい投稿がない場合はスキップできます。"
+              description="自分の過去の投稿文や、「こんな感じにしたい」と思う他のアカウントの投稿文でもOKです。AIが文体・トーンを分析して学習します。"
             >
               <div className="flex flex-col gap-3">
                 {data.past_posts.map((post, index) => (
@@ -284,10 +378,10 @@ export default function SetupPage() {
             </StepContent>
           )}
 
-          {step === 5 && (
+          {step === 8 && (
             <StepContent
               title="ハッシュタグを貼り付けてください"
-              description="自分が使っているハッシュタグや、参考にしたい他のアカウントのハッシュタグでもOKです。AIが最適なハッシュタグ戦略を作成します。参考にしたいハッシュタグがない場合はスキップできます。"
+              description="自分が使っているハッシュタグや、参考にしたい他のアカウントのハッシュタグでもOKです。AIが最適なハッシュタグ戦略を作成します。"
             >
               <textarea
                 placeholder={"例:\n#マルヤス工業 #製造業 #理系就活 #工場見学\n#ものづくり #機械加工 #企業公式"}
@@ -300,18 +394,16 @@ export default function SetupPage() {
             </StepContent>
           )}
 
-          {step === 6 && (
+          {step === 9 && (
             <StepContent
-              title="その他のリクエスト"
-              description="投稿文の生成にあたって、特別なリクエストがあれば入力してください。空欄でもOKです。"
+              title="競合・参考アカウントを教えてください"
+              description="参考にしたいアカウントやライバルのアカウント名を入力してください。AIがキーワードやトーン戦略の参考にします。"
             >
               <textarea
-                placeholder={"例:\n・リールが回るような文章にしてほしい\n・絵文字を多めに使ってほしい\n・CTAを必ず入れてほしい\n・フランクな口調にしてほしい"}
-                value={data.custom_instructions}
-                onChange={(e) =>
-                  updateField("custom_instructions", e.target.value)
-                }
-                rows={5}
+                placeholder={"例:\n@kawasakimotors_jp\n@toyota_jp\n@honda_jp"}
+                value={data.competitors}
+                onChange={(e) => updateField("competitors", e.target.value)}
+                rows={4}
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#6C63FF]"
                 autoFocus
               />
@@ -340,13 +432,11 @@ export default function SetupPage() {
                 disabled={!canProceed() || loading}
                 className="flex-1 rounded-xl bg-[#6C63FF] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
-                {step === TOTAL_STEPS
-                  ? "AIで分析して設定完了"
-                  : "次へ"}
+                {step === TOTAL_STEPS ? "AIで分析して設定完了" : "次へ"}
               </button>
             </div>
 
-            {(step === 4 || step === 5) && (
+            {SKIPPABLE_STEPS.includes(step) && (
               <button
                 onClick={handleSkip}
                 className="text-sm text-gray-400 hover:text-[#6C63FF]"
