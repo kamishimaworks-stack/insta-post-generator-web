@@ -79,3 +79,51 @@ export async function analyzeStyle(
 
   return data as StyleAnalysisResponse;
 }
+
+export type ModifyPromptResponse = {
+  readonly success: boolean;
+  readonly data?: { readonly updated_prompt: string };
+  readonly error?: { readonly code: string; readonly message: string };
+};
+
+export async function modifyPrompt(
+  currentPrompt: string,
+  modificationRequest: string,
+  promptType: "tone" | "hashtag"
+): Promise<ModifyPromptResponse> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return {
+      success: false,
+      error: { code: "UNAUTHORIZED", message: "ログインしてください" },
+    };
+  }
+
+  const { data, error } = await supabase.functions.invoke("modify-prompt", {
+    body: {
+      current_prompt: currentPrompt,
+      modification_request: modificationRequest,
+      prompt_type: promptType,
+    },
+  });
+
+  if (error) {
+    console.error("modify-prompt error:", error);
+    if (data && typeof data === "object" && "error" in data) {
+      return data as ModifyPromptResponse;
+    }
+    return {
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: `プロンプト修正に失敗しました: ${error.message || "不明なエラー"}`,
+      },
+    };
+  }
+
+  return data as ModifyPromptResponse;
+}
