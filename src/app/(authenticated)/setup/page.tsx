@@ -249,8 +249,8 @@ export default function SetupPage() {
 
           {step === 4 && (
             <StepContent
-              title="過去の投稿文をコピペしてください"
-              description="AIがあなたの文体・トーンを分析します。まだ投稿がない場合はスキップできます（AIが最適なスタイルを提案します）。"
+              title="投稿文をコピペしてください"
+              description="自分の過去の投稿文や、「こんな感じにしたい」と思う他のアカウントの投稿文でもOKです。AIが文体・トーンを分析して学習します。まだ参考にしたい投稿がない場合はスキップできます。"
             >
               <div className="flex flex-col gap-3">
                 {data.past_posts.map((post, index) => (
@@ -286,8 +286,8 @@ export default function SetupPage() {
 
           {step === 5 && (
             <StepContent
-              title="よく使うハッシュタグを貼り付けてください"
-              description="AIが最適なハッシュタグ戦略を分析します。まだハッシュタグがない場合はスキップできます（AIが最適な戦略を提案します）。"
+              title="ハッシュタグを貼り付けてください"
+              description="自分が使っているハッシュタグや、参考にしたい他のアカウントのハッシュタグでもOKです。AIが最適なハッシュタグ戦略を作成します。参考にしたいハッシュタグがない場合はスキップできます。"
             >
               <textarea
                 placeholder={"例:\n#マルヤス工業 #製造業 #理系就活 #工場見学\n#ものづくり #機械加工 #企業公式"}
