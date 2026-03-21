@@ -99,16 +99,20 @@ export default function SetupPage() {
     if (step < TOTAL_STEPS) {
       if (step === 4) {
         const nonEmpty = data.past_posts.filter((p) => p.trim().length > 0);
-        if (nonEmpty.length > 0 && nonEmpty.length < 5) {
+        if (nonEmpty.length === 0) {
+          // 何も入力していない場合はスキップ扱い
+          setData((prev) => ({ ...prev, skipped_posts: true }));
+        } else if (nonEmpty.length < 5) {
           setError("投稿文を入力する場合は5つ以上必要です。入力しない場合は「スキップ」を押してください。");
           return;
-        }
-        if (nonEmpty.length >= 5) {
+        } else {
           setData((prev) => ({ ...prev, skipped_posts: false }));
         }
       }
       if (step === 5) {
-        if (data.past_hashtags.trim().length > 0) {
+        if (data.past_hashtags.trim().length === 0) {
+          setData((prev) => ({ ...prev, skipped_hashtags: true }));
+        } else {
           setData((prev) => ({ ...prev, skipped_hashtags: false }));
         }
       }
