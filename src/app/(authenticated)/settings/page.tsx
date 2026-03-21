@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { modifyPrompt } from "@/lib/api";
+import { analyzeStyle, modifyPrompt } from "@/lib/api";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import type { ProfileInput } from "@/types";
 
@@ -21,7 +21,7 @@ export default function SettingsPage() {
     custom_instructions: "",
   });
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modifying, setModifying] = useState<"tone" | "hashtag" | null>(null);
   const [message, setMessage] = useState("");
@@ -65,29 +65,72 @@ export default function SettingsPage() {
     setLoading(false);
   };
 
-  const handleSaveBasic = useCallback(async () => {
+  const handleReanalyze = useCallback(async () => {
     if (!profileId) return;
-    setSaving(true);
+    setAnalyzing(true);
     setMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        account_name: profile.account_name,
-        target_audience: profile.target_audience,
-        purpose: profile.purpose,
-        genre: profile.genre,
-        follower_scale: profile.follower_scale,
-        competitors: profile.competitors,
-        custom_instructions: profile.custom_instructions,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", profileId);
+    try {
+      // まず基本情報を保存
+      const supabase = createClient();
+      await supabase
+        .from("profiles")
+        .update({
+          account_name: profile.account_name,
+          target_audience: profile.target_audience,
+          purpose: profile.purpose,
+          genre: profile.genre,
+          follower_scale: profile.follower_scale,
+          competitors: profile.competitors,
+          custom_instructions: profile.custom_instructions,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", profileId);
 
-    setSaving(false);
-    setMessage(error ? "保存に失敗しました" : "設定を保存しました");
-    setTimeout(() => setMessage(""), 3000);
+      // 再分析（基本情報ベースで指示書を再生成）
+      const analysisResult = await analyzeStyle(
+        [],
+        "",
+        profile.account_name.trim(),
+        profile.target_audience.trim(),
+        profile.purpose.trim(),
+        profile.genre.trim(),
+        profile.follower_scale.trim(),
+        profile.competitors.trim()
+      );
+
+      if (!analysisResult.success) {
+        setMessage(analysisResult.error?.message ?? "再分析に失敗しました");
+        setAnalyzing(false);
+        return;
+      }
+
+      // 分析結果を保存
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          tone: analysisResult.data!.tone_analysis,
+          fixed_hashtags: analysisResult.data!.hashtag_strategy,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", profileId);
+
+      if (updateError) {
+        setMessage("保存に失敗しました");
+      } else {
+        setProfile((prev) => ({
+          ...prev,
+          tone: analysisResult.data!.tone_analysis,
+          fixed_hashtags: analysisResult.data!.hashtag_strategy,
+        }));
+        setMessage("基本情報を保存し、指示書を再分析しました");
+      }
+    } catch {
+      setMessage("エラーが発生しました");
+    }
+
+    setAnalyzing(false);
+    setTimeout(() => setMessage(""), 5000);
   }, [profileId, profile]);
 
   const handleModifyPrompt = useCallback(
@@ -139,7 +182,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      {modifying && <LoadingOverlay status="analyzing" />}
+      {(analyzing || modifying) && <LoadingOverlay status="analyzing" />}
 
       <h1 className="mb-6 text-2xl font-bold text-gray-900">設定</h1>
 
@@ -179,13 +222,17 @@ export default function SettingsPage() {
             <BasicField
               label="フォロワー規模"
               value={profile.follower_scale}
-              onChange={(v) => setProfile((p) => ({ ...p, follower_scale: v }))}
+              onChange={(v) =>
+                setProfile((p) => ({ ...p, follower_scale: v }))
+              }
               placeholder="例: 1,000〜5,000人"
             />
             <BasicField
               label="競合・参考アカウント"
               value={profile.competitors}
-              onChange={(v) => setProfile((p) => ({ ...p, competitors: v }))}
+              onChange={(v) =>
+                setProfile((p) => ({ ...p, competitors: v }))
+              }
               placeholder="例: @kawasakimotors_jp"
             />
             <div>
@@ -206,12 +253,15 @@ export default function SettingsPage() {
               />
             </div>
             <button
-              onClick={handleSaveBasic}
-              disabled={saving}
+              onClick={handleReanalyze}
+              disabled={analyzing}
               className="rounded-xl bg-[#6C63FF] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {saving ? "保存中..." : "基本情報を保存"}
+              {analyzing ? "分析中..." : "保存して再分析"}
             </button>
+            <p className="text-xs text-gray-400">
+              基本情報を保存し、トーン指示書とハッシュタグ戦略を再生成します
+            </p>
           </div>
         </section>
 
@@ -312,7 +362,9 @@ export default function SettingsPage() {
         {message && (
           <p
             className={`text-sm ${
-              message.includes("失敗") ? "text-red-500" : "text-green-600"
+              message.includes("失敗") || message.includes("エラー")
+                ? "text-red-500"
+                : "text-green-600"
             }`}
           >
             {message}
@@ -322,15 +374,8 @@ export default function SettingsPage() {
         <hr className="border-gray-200" />
 
         <button
-          onClick={() => router.push("/setup")}
-          className="rounded-xl border border-[#6C63FF] py-3 text-base font-semibold text-[#6C63FF] hover:bg-[#6C63FF]/5"
-        >
-          初期設定をやり直す
-        </button>
-
-        <button
           onClick={handleLogout}
-          className="mt-4 rounded-xl border border-red-400 py-3 text-base font-semibold text-red-500 hover:bg-red-50"
+          className="rounded-xl border border-red-400 py-3 text-base font-semibold text-red-500 hover:bg-red-50"
         >
           ログアウト
         </button>
