@@ -58,32 +58,57 @@ export async function analyzeStyle(
     };
   }
 
-  const { data, error } = await supabase.functions.invoke("analyze-style", {
-    body: {
-      past_posts: pastPosts.filter((p) => p.trim().length > 0),
-      past_hashtags: pastHashtags.trim(),
-      account_name: accountName?.trim() || "",
-      target_audience: targetAudience?.trim() || "",
-      purpose: purpose?.trim() || "",
-    },
-  });
+  const commonBody = {
+    account_name: accountName?.trim() || "",
+    target_audience: targetAudience?.trim() || "",
+    purpose: purpose?.trim() || "",
+  };
 
-  if (error) {
-    console.error("analyze-style error:", error);
-    // Edge Functionがエラーレスポンスを返した場合、dataにレスポンスが入っていることがある
-    if (data && typeof data === "object" && "error" in data) {
-      return data as StyleAnalysisResponse;
-    }
+  // 2つのEdge Functionを並列で呼び出し（タイムアウト回避）
+  const [toneResult, hashtagResult] = await Promise.all([
+    supabase.functions.invoke("analyze-tone", {
+      body: {
+        past_posts: pastPosts.filter((p) => p.trim().length > 0),
+        ...commonBody,
+      },
+    }),
+    supabase.functions.invoke("analyze-hashtags", {
+      body: {
+        past_hashtags: pastHashtags.trim(),
+        ...commonBody,
+      },
+    }),
+  ]);
+
+  if (toneResult.error) {
+    console.error("analyze-tone error:", toneResult.error);
     return {
       success: false,
       error: {
         code: "INTERNAL_ERROR",
-        message: `スタイル分析に失敗しました: ${error.message || "不明なエラー"}`,
+        message: `トーン分析に失敗しました: ${toneResult.error.message || "不明なエラー"}`,
       },
     };
   }
 
-  return data as StyleAnalysisResponse;
+  if (hashtagResult.error) {
+    console.error("analyze-hashtags error:", hashtagResult.error);
+    return {
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: `ハッシュタグ分析に失敗しました: ${hashtagResult.error.message || "不明なエラー"}`,
+      },
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      tone_analysis: toneResult.data?.data?.tone_analysis ?? "",
+      hashtag_strategy: hashtagResult.data?.data?.hashtag_strategy ?? "",
+    },
+  };
 }
 
 export type ModifyPromptResponse = {
