@@ -97,13 +97,28 @@ export default function SetupPage() {
     }
   };
 
-  const handleSkip = useCallback(() => {
-    if (step === 7) setData((prev) => ({ ...prev, skipped_posts: true }));
-    else if (step === 8) setData((prev) => ({ ...prev, skipped_hashtags: true }));
-    else if (step === 9) setData((prev) => ({ ...prev, skipped_competitors: true }));
-    setStep((s) => s + 1);
-    setError("");
-  }, [step]);
+  const isCurrentStepEmpty = (): boolean => {
+    switch (step) {
+      case 7:
+        return data.past_posts.filter((p) => p.trim().length > 0).length === 0;
+      case 8:
+        return data.past_hashtags.trim().length === 0;
+      case 9:
+        return data.competitors.trim().length === 0;
+      default:
+        return false;
+    }
+  };
+
+  const getButtonLabel = (): string => {
+    if (step === TOTAL_STEPS) {
+      return isCurrentStepEmpty() ? "スキップしてAIで分析" : "AIで分析して設定完了";
+    }
+    if (SKIPPABLE_STEPS.includes(step) && isCurrentStepEmpty()) {
+      return "スキップ";
+    }
+    return "次へ";
+  };
 
   const handleNext = useCallback(async () => {
     setError("");
@@ -432,18 +447,9 @@ export default function SetupPage() {
                 disabled={!canProceed() || loading}
                 className="flex-1 rounded-xl bg-[#6C63FF] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
-                {step === TOTAL_STEPS ? "AIで分析して設定完了" : "次へ"}
+                {getButtonLabel()}
               </button>
             </div>
-
-            {SKIPPABLE_STEPS.includes(step) && (
-              <button
-                onClick={handleSkip}
-                className="text-sm text-gray-400 hover:text-[#6C63FF]"
-              >
-                スキップ（AIが最適なものを提案します）
-              </button>
-            )}
           </div>
         </div>
       </div>
