@@ -168,9 +168,8 @@ export default function SettingsPage() {
   const handleLogout = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }, [router]);
+    window.location.href = "/login";
+  }, []);
 
   if (loading) {
     return (
