@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useGenerationStore } from "@/stores/useGenerationStore";
-import { validateGenerateInput } from "@/lib/validation";
+import { validateTheme, validateVideoDescription } from "@/lib/validation";
 import { uploadImage } from "@/lib/storage";
 import { generateCaption } from "@/lib/api";
 import { ImageUploader } from "@/components/ImageUploader";
@@ -41,17 +41,26 @@ export default function CreatePage() {
   const handleGenerate = useCallback(async () => {
     setErrorMessage("");
 
-    const validation = validateGenerateInput(theme, videoDescription, imageFile);
-    if (!validation.valid) {
-      setErrorMessage(validation.message);
+    const themeValidation = validateTheme(theme);
+    if (!themeValidation.valid) {
+      setErrorMessage(themeValidation.message);
+      return;
+    }
+    const descValidation = validateVideoDescription(videoDescription);
+    if (!descValidation.valid) {
+      setErrorMessage(descValidation.message);
       return;
     }
 
     try {
-      // Upload image
-      setLoadingStatus("uploading");
-      const imagePath = await uploadImage(imageFile!);
-      setImagePath(imagePath);
+      let imagePath = "";
+
+      // 画像がある場合のみアップロード
+      if (imageFile) {
+        setLoadingStatus("uploading");
+        imagePath = await uploadImage(imageFile);
+        setImagePath(imagePath);
+      }
 
       // Generate caption
       setLoadingStatus("generating");
@@ -131,6 +140,7 @@ export default function CreatePage() {
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-gray-600">
             サムネイル画像
+            <span className="ml-1 font-normal text-gray-400">（任意）</span>
           </label>
           <ImageUploader
             imagePreview={imagePreview}
