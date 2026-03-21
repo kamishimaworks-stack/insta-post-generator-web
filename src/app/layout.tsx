@@ -10,6 +10,16 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "InstaPost Generator",
   description: "Instagram投稿文を自動作成",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/icons/icon-180x180.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "InstaPost",
+  },
 };
 
 export default function RootLayout({
