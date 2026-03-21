@@ -43,7 +43,10 @@ export async function generateCaption(
 
 export async function analyzeStyle(
   pastPosts: readonly string[],
-  pastHashtags: string
+  pastHashtags: string,
+  accountName?: string,
+  targetAudience?: string,
+  purpose?: string
 ): Promise<StyleAnalysisResponse> {
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -59,6 +62,9 @@ export async function analyzeStyle(
     body: {
       past_posts: pastPosts.filter((p) => p.trim().length > 0),
       past_hashtags: pastHashtags.trim(),
+      account_name: accountName?.trim() || "",
+      target_audience: targetAudience?.trim() || "",
+      purpose: purpose?.trim() || "",
     },
   });
 

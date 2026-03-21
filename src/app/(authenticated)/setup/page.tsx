@@ -14,6 +14,8 @@ type SetupData = {
   past_posts: string[];
   past_hashtags: string;
   custom_instructions: string;
+  skipped_posts: boolean;
+  skipped_hashtags: boolean;
 };
 
 const TOTAL_STEPS = 6;
@@ -30,6 +32,8 @@ export default function SetupPage() {
     past_posts: ["", "", "", "", ""],
     past_hashtags: "",
     custom_instructions: "",
+    skipped_posts: false,
+    skipped_hashtags: false,
   });
 
   const updateField = useCallback(
@@ -68,12 +72,10 @@ export default function SetupPage() {
         return data.target_audience.trim().length > 0;
       case 3:
         return data.purpose.trim().length > 0;
-      case 4: {
-        const result = validatePastPosts(data.past_posts);
-        return result.valid;
-      }
+      case 4:
+        return true; // スキップ可能
       case 5:
-        return data.past_hashtags.trim().length > 0;
+        return true; // スキップ可能
       case 6:
         return true;
       default:
@@ -81,15 +83,33 @@ export default function SetupPage() {
     }
   };
 
+  const handleSkip = useCallback(() => {
+    if (step === 4) {
+      setData((prev) => ({ ...prev, skipped_posts: true }));
+    } else if (step === 5) {
+      setData((prev) => ({ ...prev, skipped_hashtags: true }));
+    }
+    setStep((s) => s + 1);
+    setError("");
+  }, [step]);
+
   const handleNext = useCallback(async () => {
     setError("");
 
     if (step < TOTAL_STEPS) {
       if (step === 4) {
-        const result = validatePastPosts(data.past_posts);
-        if (!result.valid) {
-          setError(result.message);
+        const nonEmpty = data.past_posts.filter((p) => p.trim().length > 0);
+        if (nonEmpty.length > 0 && nonEmpty.length < 5) {
+          setError("投稿文を入力する場合は5つ以上必要です。入力しない場合は「スキップ」を押してください。");
           return;
+        }
+        if (nonEmpty.length >= 5) {
+          setData((prev) => ({ ...prev, skipped_posts: false }));
+        }
+      }
+      if (step === 5) {
+        if (data.past_hashtags.trim().length > 0) {
+          setData((prev) => ({ ...prev, skipped_hashtags: false }));
         }
       }
       setStep((s) => s + 1);
@@ -100,9 +120,17 @@ export default function SetupPage() {
     setLoading(true);
 
     try {
+      const hasPosts = !data.skipped_posts &&
+        data.past_posts.filter((p) => p.trim().length > 0).length >= 5;
+      const hasHashtags = !data.skipped_hashtags &&
+        data.past_hashtags.trim().length > 0;
+
       const analysisResult = await analyzeStyle(
-        data.past_posts,
-        data.past_hashtags
+        hasPosts ? data.past_posts : [],
+        hasHashtags ? data.past_hashtags : "",
+        data.account_name.trim(),
+        data.target_audience.trim(),
+        data.purpose.trim()
       );
 
       if (!analysisResult.success) {
@@ -222,7 +250,7 @@ export default function SetupPage() {
           {step === 4 && (
             <StepContent
               title="過去の投稿文をコピペしてください"
-              description="最低5つの投稿文を貼り付けてください。AIがあなたの文体・トーンを分析し、最適なスタイルを学習します。"
+              description="AIがあなたの文体・トーンを分析します。まだ投稿がない場合はスキップできます（AIが最適なスタイルを提案します）。"
             >
               <div className="flex flex-col gap-3">
                 {data.past_posts.map((post, index) => (
@@ -259,7 +287,7 @@ export default function SetupPage() {
           {step === 5 && (
             <StepContent
               title="よく使うハッシュタグを貼り付けてください"
-              description="過去に使ったハッシュタグをまとめて貼り付けてください。AIが最適なハッシュタグ戦略を分析します。"
+              description="AIが最適なハッシュタグ戦略を分析します。まだハッシュタグがない場合はスキップできます（AIが最適な戦略を提案します）。"
             >
               <textarea
                 placeholder={"例:\n#マルヤス工業 #製造業 #理系就活 #工場見学\n#ものづくり #機械加工 #企業公式"}
@@ -294,27 +322,38 @@ export default function SetupPage() {
             <p className="mt-3 text-sm text-red-500">{error}</p>
           )}
 
-          <div className="mt-6 flex gap-3">
-            {step > 1 && (
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex gap-3">
+              {step > 1 && (
+                <button
+                  onClick={() => {
+                    setStep((s) => s - 1);
+                    setError("");
+                  }}
+                  className="flex-1 rounded-xl border border-gray-200 py-3 text-base font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  戻る
+                </button>
+              )}
               <button
-                onClick={() => {
-                  setStep((s) => s - 1);
-                  setError("");
-                }}
-                className="flex-1 rounded-xl border border-gray-200 py-3 text-base font-semibold text-gray-600 hover:bg-gray-50"
+                onClick={handleNext}
+                disabled={!canProceed() || loading}
+                className="flex-1 rounded-xl bg-[#6C63FF] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
-                戻る
+                {step === TOTAL_STEPS
+                  ? "AIで分析して設定完了"
+                  : "次へ"}
+              </button>
+            </div>
+
+            {(step === 4 || step === 5) && (
+              <button
+                onClick={handleSkip}
+                className="text-sm text-gray-400 hover:text-[#6C63FF]"
+              >
+                スキップ（AIが最適なものを提案します）
               </button>
             )}
-            <button
-              onClick={handleNext}
-              disabled={!canProceed() || loading}
-              className="flex-1 rounded-xl bg-[#6C63FF] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-            >
-              {step === TOTAL_STEPS
-                ? "AIで分析して設定完了"
-                : "次へ"}
-            </button>
           </div>
         </div>
       </div>
