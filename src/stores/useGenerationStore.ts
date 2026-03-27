@@ -4,6 +4,7 @@ import type { LoadingStatus } from "@/types";
 type GenerationState = {
   readonly theme: string;
   readonly videoDescription: string;
+  readonly taste: string;
   readonly imageFile: File | null;
   readonly imagePreview: string | null;
   readonly imagePath: string;
@@ -15,6 +16,7 @@ type GenerationState = {
 
   readonly setTheme: (theme: string) => void;
   readonly setVideoDescription: (desc: string) => void;
+  readonly setTaste: (taste: string) => void;
   readonly setImageFile: (file: File | null) => void;
   readonly setImagePreview: (preview: string | null) => void;
   readonly setImagePath: (path: string) => void;
@@ -30,6 +32,7 @@ type GenerationState = {
 export const useGenerationStore = create<GenerationState>((set) => ({
   theme: "",
   videoDescription: "",
+  taste: "",
   imageFile: null,
   imagePreview: null,
   imagePath: "",
@@ -41,6 +44,7 @@ export const useGenerationStore = create<GenerationState>((set) => ({
 
   setTheme: (theme) => set({ theme }),
   setVideoDescription: (videoDescription) => set({ videoDescription }),
+  setTaste: (taste) => set({ taste }),
   setImageFile: (imageFile) => set({ imageFile }),
   setImagePreview: (imagePreview) => set({ imagePreview }),
   setImagePath: (imagePath) => set({ imagePath }),
@@ -54,6 +58,7 @@ export const useGenerationStore = create<GenerationState>((set) => ({
     set({
       theme: "",
       videoDescription: "",
+      taste: "",
       imageFile: null,
       imagePreview: null,
       imagePath: "",

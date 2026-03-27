@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useGenerationStore } from "@/stores/useGenerationStore";
-import { validateTheme, validateVideoDescription } from "@/lib/validation";
+import { validateTheme, validateVideoDescription, validateTaste } from "@/lib/validation";
 import { uploadImage } from "@/lib/storage";
 import { generateCaption } from "@/lib/api";
 import { ImageUploader } from "@/components/ImageUploader";
@@ -14,12 +14,14 @@ export default function CreatePage() {
   const {
     theme,
     videoDescription,
+    taste,
     imageFile,
     imagePreview,
     loadingStatus,
     errorMessage,
     setTheme,
     setVideoDescription,
+    setTaste,
     setImageFile,
     setImagePreview,
     setImagePath,
@@ -51,6 +53,11 @@ export default function CreatePage() {
       setErrorMessage(descValidation.message);
       return;
     }
+    const tasteValidation = validateTaste(taste);
+    if (!tasteValidation.valid) {
+      setErrorMessage(tasteValidation.message);
+      return;
+    }
 
     try {
       let imagePath = "";
@@ -64,7 +71,7 @@ export default function CreatePage() {
 
       // Generate caption
       setLoadingStatus("generating");
-      const result = await generateCaption(imagePath, theme, videoDescription);
+      const result = await generateCaption(imagePath, theme, videoDescription, taste.trim() || undefined);
 
       if (!result.success) {
         setErrorMessage(result.error.message);
@@ -84,6 +91,7 @@ export default function CreatePage() {
   }, [
     theme,
     videoDescription,
+    taste,
     imageFile,
     setErrorMessage,
     setLoadingStatus,
@@ -145,6 +153,23 @@ export default function CreatePage() {
           <ImageUploader
             imagePreview={imagePreview}
             onImageSelect={handleImageSelect}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-gray-600">
+            テイスト（任意）
+            <span className="ml-1 font-normal text-gray-400">
+              ({taste.length}/200)
+            </span>
+          </label>
+          <input
+            type="text"
+            placeholder="例: シュールに、誠実な感じで、採用を意識して"
+            value={taste}
+            onChange={(e) => setTaste(e.target.value)}
+            maxLength={200}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
           />
         </div>
 

@@ -1,5 +1,18 @@
 import type { ValidationResult } from "@/types";
 
+export const MAX_TASTE_LENGTH = 200;
+
+export function validateTaste(taste: string): ValidationResult {
+  const trimmed = taste.trim();
+  if (trimmed.length === 0) {
+    return { valid: true };
+  }
+  if (trimmed.length > MAX_TASTE_LENGTH) {
+    return { valid: false, message: `テイストは${MAX_TASTE_LENGTH}文字以内で入力してください` };
+  }
+  return { valid: true };
+}
+
 export function validateTheme(theme: string): ValidationResult {
   const trimmed = theme.trim();
   if (trimmed.length === 0) {

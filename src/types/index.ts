@@ -49,6 +49,7 @@ export type GenerateRequest = {
   readonly image_path: string;
   readonly theme: string;
   readonly video_description: string;
+  readonly taste?: string;
 };
 
 export type GenerateResponse = {

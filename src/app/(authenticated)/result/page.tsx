@@ -14,6 +14,7 @@ export default function ResultPage() {
     imagePath,
     theme,
     videoDescription,
+    taste,
     loadingStatus,
     setCaption,
     setHashtags,
@@ -27,7 +28,7 @@ export default function ResultPage() {
 
     setLoadingStatus("generating");
     try {
-      const result = await generateCaption(imagePath, theme, videoDescription);
+      const result = await generateCaption(imagePath, theme, videoDescription, taste.trim() || undefined);
       if (result.success) {
         setResult(result.data.caption, result.data.hashtags, result.data.image_analysis);
       } else {
