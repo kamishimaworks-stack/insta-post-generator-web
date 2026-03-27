@@ -48,8 +48,8 @@ export function ImageUploader({ imagePreview, onImageSelect }: Props) {
       onDrop={handleDrop}
       className={`flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed transition-colors ${
         isDragOver
-          ? "border-[#6C63FF] bg-[#6C63FF]/5"
-          : "border-gray-300 bg-gray-50 hover:border-[#6C63FF]/50"
+          ? "border-[#2563EB] bg-[#2563EB]/5"
+          : "border-gray-300 bg-gray-50 hover:border-[#2563EB]/50"
       } ${imagePreview ? "h-auto" : "h-48"}`}
     >
       <input

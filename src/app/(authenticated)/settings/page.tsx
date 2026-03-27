@@ -248,13 +248,13 @@ export default function SettingsPage() {
                 }
                 placeholder="例: リールが回る文章にしてほしい"
                 rows={3}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
               />
             </div>
             <button
               onClick={handleReanalyze}
               disabled={analyzing}
-              className="rounded-xl bg-[#6C63FF] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="rounded-xl bg-[#2563EB] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {analyzing ? "分析中..." : "保存して再分析"}
             </button>
@@ -299,12 +299,12 @@ export default function SettingsPage() {
               onChange={(e) => setToneRequest(e.target.value)}
               placeholder={"変更したいことを書いてください\n例: 絵文字をもっと減らして、フォーマルな文体にしてほしい"}
               rows={3}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#6C63FF]"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#2563EB]"
             />
             <button
               onClick={() => handleModifyPrompt("tone")}
               disabled={!toneRequest.trim() || modifying !== null}
-              className="rounded-xl bg-[#6C63FF] py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              className="rounded-xl bg-[#2563EB] py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               AIでトーン指示書を修正
             </button>
@@ -346,12 +346,12 @@ export default function SettingsPage() {
               onChange={(e) => setHashtagRequest(e.target.value)}
               placeholder={"変更したいことを書いてください\n例: #製造業 は必ず入れてほしい、地域タグは不要"}
               rows={3}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#6C63FF]"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#2563EB]"
             />
             <button
               onClick={() => handleModifyPrompt("hashtag")}
               disabled={!hashtagRequest.trim() || modifying !== null}
-              className="rounded-xl bg-[#6C63FF] py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              className="rounded-xl bg-[#2563EB] py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               AIでハッシュタグ戦略を修正
             </button>
@@ -404,7 +404,7 @@ function BasicField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
       />
     </div>
   );

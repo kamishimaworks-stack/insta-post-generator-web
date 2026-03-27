@@ -240,7 +240,7 @@ export default function SetupPage() {
               <div
                 key={i}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  i < step ? "bg-[#6C63FF]" : "bg-gray-200"
+                  i < step ? "bg-[#2563EB]" : "bg-gray-200"
                 }`}
               />
             ))}
@@ -259,7 +259,7 @@ export default function SetupPage() {
                 placeholder="例: マルヤス工業【公式】"
                 value={data.account_name}
                 onChange={(e) => updateField("account_name", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
                 autoFocus
               />
             </StepContent>
@@ -275,7 +275,7 @@ export default function SetupPage() {
                 placeholder="例: 理系の大学生、20代の転職希望者"
                 value={data.target_audience}
                 onChange={(e) => updateField("target_audience", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
                 autoFocus
               />
             </StepContent>
@@ -291,7 +291,7 @@ export default function SetupPage() {
                 placeholder="例: 採用・フォロワー増加・ブランド認知"
                 value={data.purpose}
                 onChange={(e) => updateField("purpose", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
                 autoFocus
               />
             </StepContent>
@@ -307,7 +307,7 @@ export default function SetupPage() {
                 placeholder="例: 製造業・工場紹介、美容、グルメ、旅行、教育"
                 value={data.genre}
                 onChange={(e) => updateField("genre", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
                 autoFocus
               />
             </StepContent>
@@ -325,8 +325,8 @@ export default function SetupPage() {
                     onClick={() => updateField("follower_scale", option)}
                     className={`rounded-xl border px-4 py-3 text-left text-base transition-colors ${
                       data.follower_scale === option
-                        ? "border-[#6C63FF] bg-[#6C63FF]/5 text-[#6C63FF] font-semibold"
-                        : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#6C63FF]/50"
+                        ? "border-[#2563EB] bg-[#2563EB]/5 text-[#2563EB] font-semibold"
+                        : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#2563EB]/50"
                     }`}
                   >
                     {option}
@@ -349,7 +349,7 @@ export default function SetupPage() {
                   updateField("custom_instructions", e.target.value)
                 }
                 rows={5}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#2563EB]"
                 autoFocus
               />
             </StepContent>
@@ -369,7 +369,7 @@ export default function SetupPage() {
                       value={post}
                       onChange={(e) => updatePost(index, e.target.value)}
                       rows={3}
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm outline-none focus:border-[#6C63FF]"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm outline-none focus:border-[#2563EB]"
                     />
                     {data.past_posts.length > 5 && (
                       <button
@@ -385,7 +385,7 @@ export default function SetupPage() {
                 ))}
                 <button
                   onClick={addPostField}
-                  className="rounded-xl border-2 border-dashed border-gray-200 py-2.5 text-sm text-gray-400 hover:border-[#6C63FF]/50 hover:text-[#6C63FF]"
+                  className="rounded-xl border-2 border-dashed border-gray-200 py-2.5 text-sm text-gray-400 hover:border-[#2563EB]/50 hover:text-[#2563EB]"
                 >
                   + 投稿文を追加
                 </button>
@@ -403,7 +403,7 @@ export default function SetupPage() {
                 value={data.past_hashtags}
                 onChange={(e) => updateField("past_hashtags", e.target.value)}
                 rows={6}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#2563EB]"
                 autoFocus
               />
             </StepContent>
@@ -419,7 +419,7 @@ export default function SetupPage() {
                 value={data.competitors}
                 onChange={(e) => updateField("competitors", e.target.value)}
                 rows={4}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#6C63FF]"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#2563EB]"
                 autoFocus
               />
             </StepContent>
@@ -445,7 +445,7 @@ export default function SetupPage() {
               <button
                 onClick={handleNext}
                 disabled={!canProceed() || loading}
-                className="flex-1 rounded-xl bg-[#6C63FF] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                className="flex-1 rounded-xl bg-[#2563EB] py-3 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {getButtonLabel()}
               </button>

@@ -46,7 +46,7 @@ export default function ResultPage() {
         <p className="text-gray-400">まだ生成結果がありません</p>
         <button
           onClick={() => router.push("/create")}
-          className="rounded-xl bg-[#6C63FF] px-6 py-3 font-semibold text-white hover:opacity-90"
+          className="rounded-xl bg-[#2563EB] px-6 py-3 font-semibold text-white hover:opacity-90"
         >
           投稿文を作成する
         </button>
@@ -75,7 +75,7 @@ export default function ResultPage() {
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             rows={10}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-relaxed outline-none focus:border-[#6C63FF]"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-relaxed outline-none focus:border-[#2563EB]"
           />
         </div>
 
@@ -91,7 +91,7 @@ export default function ResultPage() {
             value={hashtags}
             onChange={(e) => setHashtags(e.target.value)}
             rows={3}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-relaxed outline-none focus:border-[#6C63FF]"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-relaxed outline-none focus:border-[#2563EB]"
           />
         </div>
 
@@ -105,7 +105,7 @@ export default function ResultPage() {
         <button
           onClick={handleRegenerate}
           disabled={loadingStatus !== "idle"}
-          className="rounded-xl border-2 border-[#6C63FF] py-3 text-base font-semibold text-[#6C63FF] transition-colors hover:bg-[#6C63FF]/5 disabled:opacity-50"
+          className="rounded-xl border-2 border-[#2563EB] py-3 text-base font-semibold text-[#2563EB] transition-colors hover:bg-[#2563EB]/5 disabled:opacity-50"
         >
           再生成する
         </button>

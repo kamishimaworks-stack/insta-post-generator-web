@@ -23,7 +23,7 @@ export function Navigation() {
               href={item.href}
               className={`flex flex-col items-center gap-1 px-4 py-1 text-xs font-medium transition-colors ${
                 isActive
-                  ? "text-[#6C63FF]"
+                  ? "text-[#2563EB]"
                   : "text-gray-400 hover:text-gray-600"
               }`}
             >

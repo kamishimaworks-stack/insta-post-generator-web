@@ -36,7 +36,7 @@ export function CopyButton({ text, label }: Props) {
       className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
         copied
           ? "bg-green-500 text-white"
-          : "bg-[#6C63FF] text-white hover:bg-[#5A52E0]"
+          : "bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
       }`}
     >
       {copied ? "コピーしました!" : label}

@@ -49,7 +49,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#6C63FF]">InstaPost Generator</h1>
+          <h1 className="text-3xl font-bold text-[#2563EB]">InstaPost Generator</h1>
           <p className="mt-2 text-sm text-gray-500">Instagram投稿文を自動作成</p>
         </div>
 
@@ -60,7 +60,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base outline-none transition-colors focus:border-[#6C63FF]"
+            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base outline-none transition-colors focus:border-[#2563EB]"
           />
           <input
             type="password"
@@ -69,7 +69,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base outline-none transition-colors focus:border-[#6C63FF]"
+            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base outline-none transition-colors focus:border-[#2563EB]"
           />
 
           {error && (
@@ -79,7 +79,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-[#6C63FF] py-3.5 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-xl bg-[#2563EB] py-3.5 text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {loading
               ? "処理中..."
@@ -94,7 +94,7 @@ export default function LoginPage() {
               setIsSignUp(!isSignUp);
               setError("");
             }}
-            className="text-sm text-gray-500 hover:text-[#6C63FF]"
+            className="text-sm text-gray-500 hover:text-[#2563EB]"
           >
             {isSignUp
               ? "すでにアカウントをお持ちの方"

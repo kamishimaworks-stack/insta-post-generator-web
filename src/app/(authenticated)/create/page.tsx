@@ -124,7 +124,7 @@ export default function CreatePage() {
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
             maxLength={100}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
           />
         </div>
 
@@ -141,7 +141,7 @@ export default function CreatePage() {
             onChange={(e) => setVideoDescription(e.target.value)}
             maxLength={500}
             rows={4}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-relaxed outline-none focus:border-[#6C63FF]"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-relaxed outline-none focus:border-[#2563EB]"
           />
         </div>
 
@@ -169,7 +169,7 @@ export default function CreatePage() {
             value={taste}
             onChange={(e) => setTaste(e.target.value)}
             maxLength={200}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#6C63FF]"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
           />
         </div>
 
@@ -180,7 +180,7 @@ export default function CreatePage() {
         <button
           onClick={handleGenerate}
           disabled={loadingStatus !== "idle"}
-          className="rounded-xl bg-[#6C63FF] py-4 text-lg font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rounded-xl bg-[#2563EB] py-4 text-lg font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           投稿文を生成
         </button>
