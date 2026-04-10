@@ -26,14 +26,22 @@ export async function generateCaption(
     body.taste = taste.trim();
   }
 
-  const { data, error } = await supabase.functions.invoke("generate-caption", {
+  const { data, error, response } = await supabase.functions.invoke("generate-caption", {
     body,
   });
 
   if (error) {
-    console.error("generate-caption error:", error, "data:", data);
-    if (data && typeof data === "object" && "error" in data) {
-      return data as ApiResponse;
+    console.error("generate-caption error:", error);
+    // For non-2xx responses, parse the response body for structured error
+    if (response) {
+      try {
+        const errorBody = await response.json();
+        if (errorBody && typeof errorBody === "object" && "error" in errorBody) {
+          return errorBody as ApiResponse;
+        }
+      } catch {
+        // Response body already consumed or not JSON
+      }
     }
     return {
       success: false,
