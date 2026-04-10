@@ -123,15 +123,16 @@ Deno.serve(async (req) => {
       // Gemini image analysis (1 retry)
       try {
         imageAnalysis = await analyzeImageWithGemini(base64Image);
-      } catch {
+      } catch (e1) {
         try {
           imageAnalysis = await analyzeImageWithGemini(base64Image);
-        } catch {
+        } catch (e2) {
+          console.error("Gemini failed twice:", e2);
           return jsonResponse(502, {
             success: false,
             error: {
               code: "IMAGE_ANALYSIS_FAILED",
-              message: "画像の分析に失敗しました",
+              message: `画像の分析に失敗しました: ${e2 instanceof Error ? e2.message : String(e2)}`,
             },
           });
         }
@@ -155,7 +156,7 @@ Deno.serve(async (req) => {
         imageAnalysis,
         taste?.trim() || null
       );
-    } catch {
+    } catch (e1) {
       try {
         generationResult = await generateWithClaude(
           profile,
@@ -164,12 +165,13 @@ Deno.serve(async (req) => {
           imageAnalysis,
           taste?.trim() || null
         );
-      } catch {
+      } catch (e2) {
+        console.error("Claude failed twice:", e2);
         return jsonResponse(502, {
           success: false,
           error: {
             code: "GENERATION_FAILED",
-            message: "文章の生成に失敗しました",
+            message: `文章の生成に失敗しました: ${e2 instanceof Error ? e2.message : String(e2)}`,
           },
         });
       }
@@ -195,10 +197,14 @@ Deno.serve(async (req) => {
         image_analysis: imageAnalysis,
       },
     });
-  } catch {
+  } catch (e) {
+    console.error("generate-caption unhandled error:", e);
     return jsonResponse(500, {
       success: false,
-      error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" },
+      error: {
+        code: "INTERNAL_ERROR",
+        message: `サーバーエラー: ${e instanceof Error ? e.message : String(e)}`,
+      },
     });
   }
 });
@@ -207,7 +213,7 @@ async function analyzeImageWithGemini(
   base64Image: string
 ): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -280,7 +286,7 @@ async function generateWithClaude(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6-20260319",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: systemPrompt,
       tools: [
