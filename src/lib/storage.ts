@@ -72,3 +72,7 @@ export async function uploadImage(file: File): Promise<string> {
 
   return `post-images/${filePath}`;
 }
+
+export async function uploadImages(files: File[]): Promise<string[]> {
+  return Promise.all(files.map((file) => uploadImage(file)));
+}

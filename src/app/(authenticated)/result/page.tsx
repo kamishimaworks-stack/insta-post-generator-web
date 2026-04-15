@@ -11,7 +11,7 @@ export default function ResultPage() {
   const {
     caption,
     hashtags,
-    imagePath,
+    imagePaths,
     theme,
     videoDescription,
     taste,
@@ -21,14 +21,20 @@ export default function ResultPage() {
     setResult,
     setLoadingStatus,
     setErrorMessage,
+    resetInput,
+    resetResult,
+    candidates,
+    activeCandidateIndex,
+    selectCandidate,
   } = useGenerationStore();
 
   const handleRegenerate = async () => {
-    if (!imagePath || !theme || !videoDescription) return;
+    if (!theme || !videoDescription) return;
 
+    setErrorMessage("");
     setLoadingStatus("generating");
     try {
-      const result = await generateCaption(imagePath, theme, videoDescription, taste.trim() || undefined);
+      const result = await generateCaption(imagePaths, theme, videoDescription, taste.trim() || undefined);
       if (result.success) {
         setResult(result.data.caption, result.data.hashtags, result.data.image_analysis);
       } else {
@@ -63,6 +69,28 @@ export default function ResultPage() {
       <h1 className="mb-6 text-2xl font-bold text-gray-900">生成結果</h1>
 
       <div className="flex flex-col gap-6">
+        {/* Candidate tabs */}
+        {candidates.length > 1 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {candidates.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => selectCandidate(index)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  index === activeCandidateIndex
+                    ? "bg-[#2563EB] text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                候補 {index + 1}
+              </button>
+            ))}
+            <span className="text-xs text-gray-400">
+              {candidates.length}件の候補
+            </span>
+          </div>
+        )}
+
         {/* Caption */}
         <div>
           <div className="mb-2 flex items-center justify-between">
@@ -110,9 +138,21 @@ export default function ResultPage() {
           再生成する
         </button>
 
-        {/* Back to create */}
+        {/* Back to edit input */}
         <button
           onClick={() => router.push("/create")}
+          className="rounded-xl border border-gray-300 py-3 text-base font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+        >
+          ← 入力内容を修正する
+        </button>
+
+        {/* New post (reset) */}
+        <button
+          onClick={() => {
+            resetInput();
+            resetResult();
+            router.push("/create");
+          }}
           className="text-sm text-gray-400 hover:text-gray-600"
         >
           新しい投稿を作成

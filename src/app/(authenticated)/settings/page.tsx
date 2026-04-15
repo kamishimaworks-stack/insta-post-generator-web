@@ -196,7 +196,7 @@ export default function SettingsPage() {
               onChange={(v) =>
                 setProfile((p) => ({ ...p, account_name: v }))
               }
-              placeholder="例: マルヤス工業【公式】"
+              placeholder="例: ○○会社【公式】"
             />
             <BasicField
               label="ターゲット"
@@ -206,12 +206,35 @@ export default function SettingsPage() {
               }
               placeholder="例: 理系の大学生"
             />
-            <BasicField
-              label="投稿の目的"
-              value={profile.purpose}
-              onChange={(v) => setProfile((p) => ({ ...p, purpose: v }))}
-              placeholder="例: 採用・フォロワー増加"
-            />
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-600">
+                投稿の目的
+              </label>
+              <select
+                value={PURPOSE_OPTIONS.slice(0, -1).includes(profile.purpose as Exclude<typeof PURPOSE_OPTIONS[number], "その他">) ? profile.purpose : "その他"}
+                onChange={(e) => {
+                  if (e.target.value === "その他") {
+                    setProfile((p) => ({ ...p, purpose: "" }));
+                  } else {
+                    setProfile((p) => ({ ...p, purpose: e.target.value }));
+                  }
+                }}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
+              >
+                {PURPOSE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              {!PURPOSE_OPTIONS.slice(0, -1).includes(profile.purpose as Exclude<typeof PURPOSE_OPTIONS[number], "その他">) && (
+                <input
+                  type="text"
+                  value={profile.purpose}
+                  onChange={(e) => setProfile((p) => ({ ...p, purpose: e.target.value }))}
+                  placeholder="目的を入力してください"
+                  className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
+                />
+              )}
+            </div>
             <BasicField
               label="ジャンル"
               value={profile.genre}
@@ -382,6 +405,16 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+const PURPOSE_OPTIONS = [
+  "採用・リクルーティング",
+  "フォロワー増加",
+  "ブランド認知・企業PR",
+  "商品・サービスの宣伝",
+  "ファンとの交流・エンゲージメント",
+  "集客・来店促進",
+  "その他",
+] as const;
 
 function BasicField({
   label,

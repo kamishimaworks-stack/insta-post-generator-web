@@ -46,7 +46,7 @@ export type StyleAnalysisResponse = {
 };
 
 export type GenerateRequest = {
-  readonly image_path: string;
+  readonly image_paths: readonly string[];
   readonly theme: string;
   readonly video_description: string;
   readonly taste?: string;

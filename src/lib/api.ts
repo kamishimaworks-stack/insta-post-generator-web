@@ -2,7 +2,7 @@ import { createClient } from "./supabase";
 import type { ApiResponse, StyleAnalysisResponse } from "@/types";
 
 export async function generateCaption(
-  imagePath: string,
+  imagePaths: string[],
   theme: string,
   videoDescription: string,
   taste?: string
@@ -17,8 +17,8 @@ export async function generateCaption(
     };
   }
 
-  const body: Record<string, string> = {
-    image_path: imagePath,
+  const body: Record<string, unknown> = {
+    image_paths: imagePaths,
     theme: theme.trim(),
     video_description: videoDescription.trim(),
   };

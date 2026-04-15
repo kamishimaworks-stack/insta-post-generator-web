@@ -216,6 +216,16 @@ export default function SetupPage() {
     }
   }, [step, data, router]);
 
+  const PURPOSE_OPTIONS = [
+    "採用・リクルーティング",
+    "フォロワー増加",
+    "ブランド認知・企業PR",
+    "商品・サービスの宣伝",
+    "ファンとの交流・エンゲージメント",
+    "集客・来店促進",
+    "その他",
+  ] as const;
+
   const followerOptions = [
     "〜1,000人",
     "1,000〜5,000人",
@@ -256,7 +266,7 @@ export default function SetupPage() {
             >
               <input
                 type="text"
-                placeholder="例: マルヤス工業【公式】"
+                placeholder="例: ○○会社【公式】"
                 value={data.account_name}
                 onChange={(e) => updateField("account_name", e.target.value)}
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
@@ -286,14 +296,44 @@ export default function SetupPage() {
               title="投稿の目的は？"
               description="何のためにInstagramに投稿していますか？"
             >
-              <input
-                type="text"
-                placeholder="例: 採用・フォロワー増加・ブランド認知"
-                value={data.purpose}
-                onChange={(e) => updateField("purpose", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
-                autoFocus
-              />
+              <div className="flex flex-col gap-2">
+                {PURPOSE_OPTIONS.map((option) => {
+                  const isOther = option === "その他";
+                  const presetValues = PURPOSE_OPTIONS.filter((o) => o !== "その他");
+                  const isSelected = isOther
+                    ? !presetValues.includes(data.purpose as typeof presetValues[number]) && data.purpose !== ""
+                    : data.purpose === option;
+                  return (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        if (isOther) {
+                          updateField("purpose", "");
+                        } else {
+                          updateField("purpose", option);
+                        }
+                      }}
+                      className={`rounded-xl border px-4 py-3 text-left text-base transition-colors ${
+                        isSelected
+                          ? "border-[#2563EB] bg-[#2563EB]/5 text-[#2563EB] font-semibold"
+                          : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#2563EB]/50"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+                {!PURPOSE_OPTIONS.slice(0, -1).includes(data.purpose as Exclude<typeof PURPOSE_OPTIONS[number], "その他">) && (
+                  <input
+                    type="text"
+                    placeholder="目的を入力してください"
+                    value={data.purpose}
+                    onChange={(e) => updateField("purpose", e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base outline-none focus:border-[#2563EB]"
+                    autoFocus
+                  />
+                )}
+              </div>
             </StepContent>
           )}
 
@@ -399,7 +439,7 @@ export default function SetupPage() {
               description="自分が使っているハッシュタグや、参考にしたい他のアカウントのハッシュタグでもOKです。AIが最適なハッシュタグ戦略を作成します。"
             >
               <textarea
-                placeholder={"例:\n#マルヤス工業 #製造業 #理系就活 #工場見学\n#ものづくり #機械加工 #企業公式"}
+                placeholder={"例:\n#自社名 #業界名 #就活 #工場見学\n#ものづくり #企業公式"}
                 value={data.past_hashtags}
                 onChange={(e) => updateField("past_hashtags", e.target.value)}
                 rows={6}

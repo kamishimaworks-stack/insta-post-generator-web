@@ -45,9 +45,11 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body = await req.json();
-    const { image_path, theme, video_description, taste } = body;
+    const { theme, video_description, taste } = body;
+    // Support both image_paths (array) and image_path (string) for backward compat
+    const imagePaths: string[] = body.image_paths ?? (body.image_path ? [body.image_path] : []);
 
-    // Validation (image_path is optional)
+    // Validation
     if (!theme?.trim() || !video_description?.trim()) {
       return jsonResponse(400, {
         success: false,
@@ -97,46 +99,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 1: Image analysis (optional)
+    // Step 1: Image analysis (optional, supports multiple images)
     let imageAnalysis = "";
-    if (image_path) {
-      const bucketName = image_path.split("/")[0];
-      const filePath = image_path.split("/").slice(1).join("/");
-      const { data: imageData, error: storageError } = await supabase.storage
-        .from(bucketName)
-        .download(filePath);
+    if (imagePaths.length > 0) {
+      const analyses: string[] = [];
+      for (const imgPath of imagePaths) {
+        const bucketName = imgPath.split("/")[0];
+        const filePath = imgPath.split("/").slice(1).join("/");
+        const { data: imageData, error: storageError } = await supabase.storage
+          .from(bucketName)
+          .download(filePath);
 
-      if (storageError || !imageData) {
-        return jsonResponse(400, {
-          success: false,
-          error: { code: "VALIDATION_ERROR", message: "画像が見つかりません" },
-        });
-      }
+        if (storageError || !imageData) continue;
 
-      const imageBytes = new Uint8Array(await imageData.arrayBuffer());
-      let binary = "";
-      for (let i = 0; i < imageBytes.length; i++) {
-        binary += String.fromCharCode(imageBytes[i]);
-      }
-      const base64Image = btoa(binary);
+        const imageBytes = new Uint8Array(await imageData.arrayBuffer());
+        let binary = "";
+        for (let i = 0; i < imageBytes.length; i++) {
+          binary += String.fromCharCode(imageBytes[i]);
+        }
+        const base64Image = btoa(binary);
 
-      // Gemini image analysis (1 retry)
-      try {
-        imageAnalysis = await analyzeImageWithGemini(base64Image);
-      } catch (e1) {
+        // Gemini image analysis (1 retry per image)
         try {
-          imageAnalysis = await analyzeImageWithGemini(base64Image);
-        } catch (e2) {
-          console.error("Gemini failed twice:", e2);
-          return jsonResponse(502, {
-            success: false,
-            error: {
-              code: "IMAGE_ANALYSIS_FAILED",
-              message: `画像の分析に失敗しました: ${e2 instanceof Error ? e2.message : String(e2)}`,
-            },
-          });
+          analyses.push(await analyzeImageWithGemini(base64Image));
+        } catch {
+          try {
+            analyses.push(await analyzeImageWithGemini(base64Image));
+          } catch (e2) {
+            console.error(`Gemini failed for image ${imgPath}:`, e2);
+            // Skip failed images instead of failing entire request
+          }
         }
       }
+      imageAnalysis = analyses.join("\n---\n");
     }
 
     // Step 2: Get profile
@@ -183,7 +178,7 @@ Deno.serve(async (req) => {
       theme: theme.trim(),
       video_description: video_description.trim(),
       taste: taste?.trim() || null,
-      image_path: image_path || null,
+      image_path: imagePaths.length > 0 ? JSON.stringify(imagePaths) : null,
       image_analysis: imageAnalysis || null,
       generated_caption: generationResult.caption,
       generated_hashtags: generationResult.hashtags,

@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useGenerationStore } from "@/stores/useGenerationStore";
 import { validateTheme, validateVideoDescription, validateTaste } from "@/lib/validation";
-import { uploadImage } from "@/lib/storage";
+import { uploadImages } from "@/lib/storage";
 import { generateCaption } from "@/lib/api";
 import { ImageUploader } from "@/components/ImageUploader";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
@@ -15,30 +15,21 @@ export default function CreatePage() {
     theme,
     videoDescription,
     taste,
-    imageFile,
-    imagePreview,
+    imageFiles,
+    imagePreviews,
     loadingStatus,
     errorMessage,
     setTheme,
     setVideoDescription,
     setTaste,
-    setImageFile,
-    setImagePreview,
-    setImagePath,
+    addImageFiles,
+    removeImage,
+    setImagePaths,
     setResult,
     setLoadingStatus,
     setErrorMessage,
     resetInput,
   } = useGenerationStore();
-
-  const handleImageSelect = useCallback(
-    (file: File) => {
-      setImageFile(file);
-      const preview = URL.createObjectURL(file);
-      setImagePreview(preview);
-    },
-    [setImageFile, setImagePreview]
-  );
 
   const handleGenerate = useCallback(async () => {
     setErrorMessage("");
@@ -60,18 +51,18 @@ export default function CreatePage() {
     }
 
     try {
-      let imagePath = "";
+      let paths: string[] = [];
 
       // 画像がある場合のみアップロード
-      if (imageFile) {
+      if (imageFiles.length > 0) {
         setLoadingStatus("uploading");
-        imagePath = await uploadImage(imageFile);
-        setImagePath(imagePath);
+        paths = await uploadImages(imageFiles);
+        setImagePaths(paths);
       }
 
       // Generate caption
       setLoadingStatus("generating");
-      const result = await generateCaption(imagePath, theme, videoDescription, taste.trim() || undefined);
+      const result = await generateCaption(paths, theme, videoDescription, taste.trim() || undefined);
 
       if (!result.success) {
         setErrorMessage(result.error.message);
@@ -92,10 +83,10 @@ export default function CreatePage() {
     theme,
     videoDescription,
     taste,
-    imageFile,
+    imageFiles,
     setErrorMessage,
     setLoadingStatus,
-    setImagePath,
+    setImagePaths,
     setResult,
     router,
   ]);
@@ -120,7 +111,7 @@ export default function CreatePage() {
           </label>
           <input
             type="text"
-            placeholder="例: 工場見学の裏側を紹介"
+            placeholder="例: 社内イベントの裏側を紹介"
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
             maxLength={100}
@@ -136,7 +127,7 @@ export default function CreatePage() {
             </span>
           </label>
           <textarea
-            placeholder="例: 工場の製造ラインを歩きながら紹介する動画。社員が笑顔で作業している様子も映っている。"
+            placeholder="例: 社内の様子を歩きながら紹介する動画。社員が笑顔で作業している様子も映っている。"
             value={videoDescription}
             onChange={(e) => setVideoDescription(e.target.value)}
             maxLength={500}
@@ -147,12 +138,13 @@ export default function CreatePage() {
 
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-gray-600">
-            サムネイル画像
-            <span className="ml-1 font-normal text-gray-400">（任意）</span>
+            投稿画像
+            <span className="ml-1 font-normal text-gray-400">（任意・最大10枚）</span>
           </label>
           <ImageUploader
-            imagePreview={imagePreview}
-            onImageSelect={handleImageSelect}
+            imagePreviews={imagePreviews}
+            onImagesSelect={addImageFiles}
+            onRemoveImage={removeImage}
           />
         </div>
 
