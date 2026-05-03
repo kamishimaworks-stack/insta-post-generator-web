@@ -7,6 +7,9 @@ const corsHeaders = {
 };
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchWithTimeout } from "../_shared/retry.ts";
+
+const CLAUDE_TIMEOUT_MS = 45000;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,7 +67,7 @@ Deno.serve(async (req) => {
     const typeLabel =
       prompt_type === "tone" ? "文体・トーン指示書" : "ハッシュタグ戦略書";
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -114,7 +117,7 @@ ${modification_request}`,
           },
         ],
       }),
-    });
+    }, CLAUDE_TIMEOUT_MS);
 
     if (!response.ok)
       throw new Error(`Claude API error: ${response.status}`);

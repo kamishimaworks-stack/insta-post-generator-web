@@ -1,4 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { parseImagePath } from "../_shared/image-path.ts";
+import { bytesToBase64, validateImageSize } from "../_shared/image-encode.ts";
+import { fetchWithTimeout, retryWithBackoff } from "../_shared/retry.ts";
+import { extractCaptionFromContent } from "../_shared/claude-parse.ts";
+import { jstMidnightIso } from "../_shared/jst-day.ts";
+
+const GEMINI_TIMEOUT_MS = 15000;
+const CLAUDE_TIMEOUT_MS = 45000;
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
 const CLAUDE_API_KEY = Deno.env.get("CLAUDE_API_KEY")!;
@@ -80,14 +88,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Rate limit check
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Rate limit check (JST 0時起点でカウント)
     const { count } = await supabase
       .from("generations")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .gte("created_at", today.toISOString());
+      .gte("created_at", jstMidnightIso());
 
     if ((count ?? 0) >= DAILY_LIMIT) {
       return jsonResponse(429, {
@@ -104,76 +110,79 @@ Deno.serve(async (req) => {
     if (imagePaths.length > 0) {
       const analyses: string[] = [];
       for (const imgPath of imagePaths) {
-        const bucketName = imgPath.split("/")[0];
-        const filePath = imgPath.split("/").slice(1).join("/");
+        const parsed = parseImagePath(imgPath, user.id);
+        if (!parsed.ok) {
+          return jsonResponse(400, {
+            success: false,
+            error: { code: "VALIDATION_ERROR", message: "画像パスが不正です" },
+          });
+        }
         const { data: imageData, error: storageError } = await supabase.storage
-          .from(bucketName)
-          .download(filePath);
+          .from(parsed.bucket)
+          .download(parsed.filePath);
 
         if (storageError || !imageData) continue;
 
-        const imageBytes = new Uint8Array(await imageData.arrayBuffer());
-        let binary = "";
-        for (let i = 0; i < imageBytes.length; i++) {
-          binary += String.fromCharCode(imageBytes[i]);
+        const sizeCheck = validateImageSize(imageData.size);
+        if (!sizeCheck.ok) {
+          console.warn("image too large or empty, skipping:", imgPath, sizeCheck.reason, imageData.size);
+          continue;
         }
-        const base64Image = btoa(binary);
+        const imageBytes = new Uint8Array(await imageData.arrayBuffer());
+        const base64Image = bytesToBase64(imageBytes);
 
-        // Gemini image analysis (1 retry per image)
+        // Gemini image analysis with timeout + exponential backoff
         try {
-          analyses.push(await analyzeImageWithGemini(base64Image));
-        } catch {
-          try {
-            analyses.push(await analyzeImageWithGemini(base64Image));
-          } catch (e2) {
-            console.error(`Gemini failed for image ${imgPath}:`, e2);
-            // Skip failed images instead of failing entire request
-          }
+          analyses.push(
+            await retryWithBackoff(
+              () => analyzeImageWithGemini(base64Image),
+              { attempts: 2, baseDelayMs: 500 },
+            ),
+          );
+        } catch (e) {
+          console.error(`Gemini failed for image ${imgPath}:`, e);
+          // Skip failed images instead of failing entire request
         }
       }
       imageAnalysis = analyses.join("\n---\n");
     }
 
-    // Step 2: Get profile
-    const { data: profile } = await supabase
+    // Step 2: Get profile (profile 不在でも500にせず未設定として続行)
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
+    if (profileError) {
+      console.error("profiles.maybeSingle failed:", profileError, "user:", user.id);
+    }
 
-    // Step 3: Claude caption generation (1 retry)
+    // Step 3: Claude caption generation (timeout + exponential backoff retry)
     let generationResult: { caption: string; hashtags: string };
     try {
-      generationResult = await generateWithClaude(
-        profile,
-        theme.trim(),
-        video_description.trim(),
-        imageAnalysis,
-        taste?.trim() || null
-      );
-    } catch (e1) {
-      try {
-        generationResult = await generateWithClaude(
+      generationResult = await retryWithBackoff(
+        () => generateWithClaude(
           profile,
           theme.trim(),
           video_description.trim(),
           imageAnalysis,
-          taste?.trim() || null
-        );
-      } catch (e2) {
-        console.error("Claude failed twice:", e2);
-        return jsonResponse(502, {
-          success: false,
-          error: {
-            code: "GENERATION_FAILED",
-            message: `文章の生成に失敗しました: ${e2 instanceof Error ? e2.message : String(e2)}`,
-          },
-        });
-      }
+          taste?.trim() || null,
+        ),
+        { attempts: 2, baseDelayMs: 1000 },
+      );
+    } catch (e2) {
+      console.error("Claude failed twice:", e2);
+      return jsonResponse(502, {
+        success: false,
+        error: {
+          code: "GENERATION_FAILED",
+          message: `文章の生成に失敗しました: ${e2 instanceof Error ? e2.message : String(e2)}`,
+        },
+      });
     }
 
-    // Save to DB
-    await supabase.from("generations").insert({
+    // Save to DB (保存失敗はログに残すがユーザー応答は維持)
+    const { error: insertError } = await supabase.from("generations").insert({
       user_id: user.id,
       theme: theme.trim(),
       video_description: video_description.trim(),
@@ -183,6 +192,9 @@ Deno.serve(async (req) => {
       generated_caption: generationResult.caption,
       generated_hashtags: generationResult.hashtags,
     });
+    if (insertError) {
+      console.error("generations.insert failed:", insertError, "user:", user.id);
+    }
 
     return jsonResponse(200, {
       success: true,
@@ -207,7 +219,7 @@ Deno.serve(async (req) => {
 async function analyzeImageWithGemini(
   base64Image: string
 ): Promise<string> {
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: "POST",
@@ -226,7 +238,8 @@ async function analyzeImageWithGemini(
           },
         ],
       }),
-    }
+    },
+    GEMINI_TIMEOUT_MS,
   );
   if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
   const result = await response.json();
@@ -273,7 +286,7 @@ async function generateWithClaude(
 - テーマ: ${theme}
 - 動画内容: ${videoDescription}${imageLine}${tasteLine}`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -307,35 +320,16 @@ async function generateWithClaude(
       tool_choice: { type: "tool", name: "generate_post" },
       messages: [{ role: "user", content: userMessage }],
     }),
-  });
+  }, CLAUDE_TIMEOUT_MS);
 
   if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
 
   const result = await response.json();
-
-  // Extract JSON from tool_use response
-  const toolUseBlock = result.content.find(
-    (block: { type: string }) => block.type === "tool_use"
-  );
-  if (toolUseBlock?.input?.caption && toolUseBlock?.input?.hashtags) {
-    return {
-      caption: toolUseBlock.input.caption,
-      hashtags: toolUseBlock.input.hashtags,
-    };
+  const extracted = extractCaptionFromContent(result.content);
+  if (!extracted.ok) {
+    throw new Error(`Failed to parse Claude response: ${extracted.reason}`);
   }
-
-  // Fallback: extract JSON from text
-  const textBlock = result.content.find(
-    (block: { type: string }) => block.type === "text"
-  );
-  if (textBlock?.text) {
-    const jsonMatch = textBlock.text.match(/```json\s*([\s\S]*?)\s*```/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : textBlock.text;
-    const parsed = JSON.parse(jsonStr);
-    return { caption: parsed.caption, hashtags: parsed.hashtags };
-  }
-
-  throw new Error("Failed to parse Claude response");
+  return { caption: extracted.caption, hashtags: extracted.hashtags };
 }
 
 function jsonResponse(status: number, body: unknown) {

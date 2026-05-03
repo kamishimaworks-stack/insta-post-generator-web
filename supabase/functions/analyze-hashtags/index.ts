@@ -7,6 +7,10 @@ const corsHeaders = {
 };
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { formatAccountInfo, type AccountInfo as SharedAccountInfo } from "../_shared/account-info.ts";
+import { fetchWithTimeout } from "../_shared/retry.ts";
+
+const CLAUDE_TIMEOUT_MS = 45000;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -85,7 +89,12 @@ async function analyzeHashtags(
   pastHashtags: string,
   accountInfo: AccountInfo
 ): Promise<string> {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const infoBlock = formatAccountInfo(accountInfo as SharedAccountInfo);
+  const userMessage = infoBlock
+    ? `${infoBlock}\n\n以下は過去に使用したハッシュタグです。これらの傾向を活かしつつ、上記アカウントの目的・ジャンルに最適化された2026年最新アルゴリズム対応のハッシュタグ＋キーワードSEO統合戦略書を作成してください。\n\n${pastHashtags}`
+    : `以下の過去に使用したハッシュタグを分析し、2026年最新アルゴリズムに最適化されたハッシュタグ＋キーワードSEO統合戦略書を作成してください。\n\n${pastHashtags}`;
+
+  const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -169,11 +178,11 @@ async function analyzeHashtags(
       messages: [
         {
           role: "user",
-          content: `以下の過去に使用したハッシュタグを分析し、2026年最新アルゴリズムに最適化されたハッシュタグ＋キーワードSEO統合戦略書を作成してください。\n\n${pastHashtags}`,
+          content: userMessage,
         },
       ],
     }),
-  });
+  }, CLAUDE_TIMEOUT_MS);
 
   if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
 
@@ -193,7 +202,7 @@ async function analyzeHashtags(
 async function generateHashtagsFromProfile(
   accountInfo: AccountInfo
 ): Promise<string> {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -252,7 +261,7 @@ async function generateHashtagsFromProfile(
         },
       ],
     }),
-  });
+  }, CLAUDE_TIMEOUT_MS);
 
   if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
 
