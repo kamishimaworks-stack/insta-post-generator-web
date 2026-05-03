@@ -77,7 +77,8 @@ export type ErrorCode =
   | "RATE_LIMIT_EXCEEDED"
   | "IMAGE_ANALYSIS_FAILED"
   | "GENERATION_FAILED"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "TIMEOUT";
 
 export type LoadingStatus = "idle" | "uploading" | "generating" | "analyzing";
 

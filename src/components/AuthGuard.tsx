@@ -36,7 +36,7 @@ export function AuthGuard({ children }: Props) {
           .from("profiles")
           .select("account_name")
           .eq("user_id", currentUser.id)
-          .single();
+          .maybeSingle();
 
         if (!profile || !profile.account_name?.trim()) {
           router.push("/setup");

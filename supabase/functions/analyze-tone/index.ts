@@ -7,6 +7,10 @@ const corsHeaders = {
 };
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { formatAccountInfo, type AccountInfo as SharedAccountInfo } from "../_shared/account-info.ts";
+import { fetchWithTimeout } from "../_shared/retry.ts";
+
+const CLAUDE_TIMEOUT_MS = 45000;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -92,8 +96,12 @@ async function analyzeTone(
     .filter((p) => p.trim())
     .map((p, i) => `【投稿${i + 1}】\n${p}`)
     .join("\n\n");
+  const infoBlock = formatAccountInfo(accountInfo as SharedAccountInfo);
+  const userMessage = infoBlock
+    ? `${infoBlock}\n\n以下は過去のInstagram投稿文です。これらの文体的特徴を活かしつつ、上記アカウントの目的・ターゲットに最適化された2026年最新アルゴリズム対応の文体プロファイル（指示書）を作成してください。\n\n${postsText}`
+    : `以下の過去のInstagram投稿文を徹底分析して、2026年最新アルゴリズムに最適化された文体プロファイル（指示書）を作成してください。\n\n${postsText}`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -202,11 +210,11 @@ async function analyzeTone(
       messages: [
         {
           role: "user",
-          content: `以下の過去のInstagram投稿文を徹底分析して、2026年最新アルゴリズムに最適化された文体プロファイル（指示書）を作成してください。\n\n${postsText}`,
+          content: userMessage,
         },
       ],
     }),
-  });
+  }, CLAUDE_TIMEOUT_MS);
 
   if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
 
@@ -226,7 +234,7 @@ async function analyzeTone(
 async function generateToneFromProfile(
   accountInfo: AccountInfo
 ): Promise<string> {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -288,7 +296,7 @@ async function generateToneFromProfile(
         },
       ],
     }),
-  });
+  }, CLAUDE_TIMEOUT_MS);
 
   if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
 
